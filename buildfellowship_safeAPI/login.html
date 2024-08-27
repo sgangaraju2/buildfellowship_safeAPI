@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Page</title>
+</head>
+
+<body>
+    <h1>Login</h1>
+    <form id="loginForm">
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required><br><br>
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required><br><br>
+        <button type="submit">Login</button>
+    </form>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js';
+        import { initializeAppCheck, ReCaptchaEnterpriseProvider, getToken } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app-check.js";
+        import { getAuth } from 'https://www.gstatic.com/firebasejs/10.1.0/firebase-auth.js';
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "XXX",
+            authDomain: "XX",
+            projectId: "XX",
+            storageBucket: "XX",
+            messagingSenderId: "XX",
+            appId: "XX",
+            measurementId: "XX"
+        };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        const appCheck = initializeAppCheck(app, {
+            provider: new ReCaptchaEnterpriseProvider('XX'),
+            isTokenAutoRefreshEnabled: true // Set to true to allow auto-refresh.
+        });
+
+        async function loginFunction(email, password) {
+            try {
+                // Get the Firebase AppCheck token
+                const appCheckToken = await getToken(appCheck);
+
+                // Send login request with email, password, and AppCheck token
+                const responseRaw = await fetch('XX', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Firebase-AppCheck': appCheckToken.token
+                    },
+                    body: JSON.stringify({ email: email, password: password, token: appCheckToken.token })
+                });
+
+                if (!responseRaw.ok) {
+                    // Log the full response if there's an error
+                    const errorResponse = await responseRaw.text();
+                    throw new Error(`Server responded with an error: ${responseRaw.status} - ${errorResponse}`);
+                }
+
+                const response = await responseRaw.json();
+                // Handle the response here
+                console.log(response);
+            } catch (error) {
+                console.error("Error verifying user:", error);
+                const statusCode = error.response?.status || 500;
+                const message = error.response?.data || error.message;
+                res.status(statusCode).json({ error: `Error verifying user: ${message}` });
+                // Handle login error
+            }
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async function (event) {
+            event.preventDefault(); // Prevent the default form submission
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            await loginFunction(email, password);
+        });
+    </script>
+</body>
+
+</html>
